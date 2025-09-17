@@ -117,6 +117,16 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <div className="mt-2">
+          <Link
+            href="/samples"
+            className="block w-full rounded-md border px-3 py-2 text-center bg-blue-600 hover:bg-blue-700 "
+          >
+            Continue as Guest
+          </Link>
+        </div>
+
+
         {token && (
           <div className="mt-6 space-y-2">
             <div className="flex items-center justify-between">

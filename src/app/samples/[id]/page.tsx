@@ -320,59 +320,55 @@ export default function SampleDetailsPage() {
                   className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3"
                   onSubmit={async (e) => {
                     e.preventDefault();
+
                     const token = localStorage.getItem('auth_token');
                     if (!token) { router.push('/login'); return; }
 
-                    const fd = new FormData(e.currentTarget);
-                    const payload: any = {
-                      title: (fd.get('title') as string)?.trim(),
-                      bpm: fd.get('bpm') ? Number(fd.get('bpm')) : undefined,
-                      key: (fd.get('key') as string)?.trim(),
-                      genre: (fd.get('genre') as string)?.trim(),
-                      url: (fd.get('url') as string)?.trim() || undefined,
-                   };
+                    // אוספים את כל השדות + קובץ (אם נבחר)
+                    const fd = new FormData(e.currentTarget); // יש אינפוט בשם "audio"
 
-                   try {
+                    try {
                       const res = await fetch(`${API_BASE}/samples/${id}`, {
-                       method: 'PUT',
-                       headers: {
-                         'Content-Type': 'application/json',
-                          Authorization: `Bearer ${token}`,
+                        method: 'PUT',         // ← חשוב! PUT אמיתי, לא POST
+                        headers: {
+                          Authorization: `Bearer ${token}`, // בלי Content-Type ידני
                         },
-                        body: JSON.stringify(payload),
+                        body: fd,              // ← FormData כולל הקובץ
                       });
 
-                      // טוקן פג / אין הרשאה → ניקוי והפניה
-                      if (res.status === 401 || res.status === 403) {
+                    if (res.status === 401 || res.status === 403) {
                         localStorage.removeItem('auth_token');
                         localStorage.removeItem('auth_role');
                         router.push('/login');
-                       return;
-                     }
+                        return;
+                      }
 
-                     const data = await res.json().catch(() => ({}));
+                      const data = await res.json().catch(() => ({}));
                       if (!res.ok) {
                         alert(data?.error || `Update failed (${res.status})`);
                         return;
                       }
 
-                      // עדכון המסך מיד + איפוס הטופס
-                      setSample(data);                      
+                     setSample(data);
+                      alert('Changes updated successfully ✔');
                     } catch (err: any) {
                       alert(err?.message || 'Network error');
                     }
                   }}
                 >
-                  <input name="title" defaultValue={sample.title ?? ''} placeholder="Title *"
-                         className="text-gray-600 rounded-md border border-gray-600 px-3 py-2" required />
-                  <input name="bpm" defaultValue={sample.bpm ?? ''} placeholder="BPM"
-                         className="text-gray-600 rounded-md border border-gray-600 px-3 py-2" inputMode="numeric" />
-                  <input name="key" defaultValue={sample.key ?? ''} placeholder="Key (e.g. Am)"
-                         className="text-gray-600 rounded-md border border-gray-600 px-3 py-2" />
-                  <input name="genre" defaultValue={sample.genre ?? ''} placeholder="Genre"
-                         className="text-gray-600 rounded-md border border-gray-600 px-3 py-2" />
-                  <input name="url" defaultValue={sample.url ?? ''} placeholder="URL (optional)"
-                         className="md:col-span-2 text-gray-600 rounded-md border border-gray-600 px-3 py-2" />
+                  {/* השדות שלך כמו שהם */}
+                  <input name="title" defaultValue={sample.title ?? ''} placeholder="Title*" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2"required/>
+                  <input name="bpm"   defaultValue={sample.bpm ?? ''}    placeholder="bpm" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2"inputMode="numeric" />
+                  <input name="key"   defaultValue={sample.key ?? ''}    placeholder="Key (e.g Am)" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2" />
+                  <input name="genre" defaultValue={sample.genre ?? ''}  placeholder="Genre" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2"/>
+                  <input name="url"   defaultValue={sample.url ?? ''}    placeholder="URL" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2"/>
+
+                  {/* קובץ אודיו חלופי — חשוב שהשם יהיה audio */}
+                  <div className="md:col-span-2">
+                    <label className="text-gray-600 block text-sm text-gray-700 mb-1">Replace audio (optional)</label>
+                    <input type="file" name="audio" accept="audio/*"
+                           className="text-gray-600 block w-full rounded-md border border-gray-600 px-3 py-2" />
+                  </div>
 
                   <div className="md:col-span-2">
                     <button className="text-gray-600 rounded-md border border-gray-600 px-3 py-1.5 text-sm hover:bg-blue-200">
@@ -380,6 +376,7 @@ export default function SampleDetailsPage() {
                     </button>
                   </div>
                 </form>
+
               </details>
             )}
 

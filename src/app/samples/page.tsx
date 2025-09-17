@@ -22,6 +22,7 @@ type Sample = {
   isPublic?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  audio?: string;   
 };
 
 function AddSampleForm({ API_BASE }: { API_BASE: string }) {
@@ -31,46 +32,56 @@ function AddSampleForm({ API_BASE }: { API_BASE: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [hasFocus, setHasFocus] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-
+  
 
   const TOKEN_KEY = 'auth_token';
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg(null);
-    setSaving(true);
-    try {
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (!token) { setMsg('You must log in first'); return; }
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
 
-      const res = await fetch(`${API_BASE}/samples`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: form.title.trim(),
-          bpm: Number(form.bpm) || undefined,
-          key: form.key.trim(),
-          genre: form.genre.trim(),
-          url: form.url.trim() || undefined,
-        }),
-      });
+  const formEl = e.currentTarget;   // לשמור הפניה לטופס
+  setMsg(null);
+  setSaving(true);
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setMsg(data?.error || `Failed to create (status ${res.status})`); return; }
-
-      setMsg('Created ✅');
-      setForm({ title: '', bpm: '', key: '', genre: '', url: '' });
-      window.dispatchEvent(new CustomEvent('samples:refresh'));
-      setOpen(false);                                 // ← נסגור אחרי יצירה מוצלחת
-    } catch (err: any) {
-      setMsg(err?.message || 'Network error');
-    } finally {
-      setSaving(false);
+  try {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) { 
+      setMsg("You must log in first");
+      return;
     }
+
+    // שולחים את כל השדות + הקובץ
+    const fd = new FormData(formEl);
+
+    const res = await fetch(`${API_BASE}/samples`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }, // בלי Content-Type
+      body: fd,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setMsg(data?.error || `Failed to create (status ${res.status})`);
+      return;
+    }
+
+    setMsg("Created ✅");
+    formEl.reset(); // איפוס כל השדות כולל האודיו
+    setForm({ title: "", bpm: "", key: "", genre: "", url: "" });
+
+    // ריענון הרשימה בלי רילוד
+    window.dispatchEvent(new CustomEvent("samples:refresh"));
+
+    // נסגור את הטופס רק אחרי חצי שנייה, כדי שתראה את ההודעה
+    setTimeout(() => setOpen(false), 800);
+  } catch (err: any) {
+    setMsg(err?.message || "Network error");
+  } finally {
+    setSaving(false);
   }
+}
+
+
 
   return (
     <div
@@ -84,7 +95,7 @@ function AddSampleForm({ API_BASE }: { API_BASE: string }) {
       onClick={() => setOpen(true)}                   // ← וגם ב-click
       onFocusCapture={() => setHasFocus(true)}   // ← עוקב אחרי פוקוס בתוך הטופס
       onBlurCapture={() => setHasFocus(false)}   // ← מתבטל כשאין יותר פוקוס בפנים
-      className="mb-6 rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
+      className="mb-6 rounded-lg border border-gray-600 bg-white p-4 transition-shadow hover:shadow-md"
     >
       <div className="flex items-center justify-between cursor-pointer select-none">
         <h2 className="text-black text-lg font-semibold">Add Sample</h2>
@@ -102,16 +113,57 @@ function AddSampleForm({ API_BASE }: { API_BASE: string }) {
       >
         <form onSubmit={onSubmit} className="space-y-3">
           <div className="text-black grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input className="rounded-md border px-3 py-2" placeholder="Title *"
-                   value={form.title} onChange={e=>setForm({...form, title:e.target.value})} required />
-            <input className="rounded-md border px-3 py-2" placeholder="BPM"
-                   value={form.bpm} onChange={e=>setForm({...form, bpm:e.target.value})} inputMode="numeric" />
-            <input className="rounded-md border px-3 py-2" placeholder="Key (e.g. Am)"
-                   value={form.key} onChange={e=>setForm({...form, key:e.target.value})} />
-            <input className="rounded-md border px-3 py-2" placeholder="Genre"
-                   value={form.genre} onChange={e=>setForm({...form, genre:e.target.value})} />
-            <input className="md:col-span-2 rounded-md border px-3 py-2" placeholder="URL (optional)"
-                   value={form.url} onChange={e=>setForm({...form, url:e.target.value})} />
+            <input
+              name="title"
+              className="rounded-md border px-3 py-2"
+              placeholder="Title *"
+              value={form.title}
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              required
+            />
+
+            <input
+              name="bpm"
+              className="rounded-md border px-3 py-2"
+              placeholder="BPM"
+              value={form.bpm}
+              onChange={e => setForm({ ...form, bpm: e.target.value })}
+              inputMode="numeric"
+            />
+
+            <input
+              name="key"
+  className="rounded-md border px-3 py-2"
+  placeholder="Key (e.g. Am)"
+  value={form.key}
+              onChange={e => setForm({ ...form, key: e.target.value })}
+            />
+
+            <input
+              name="genre"
+              className="rounded-md border px-3 py-2"
+              placeholder="Genre"
+              value={form.genre}
+              onChange={e => setForm({ ...form, genre: e.target.value })}
+            />
+
+            <input
+              name="url"
+              className="md:col-span-2 rounded-md border px-3 py-2"
+              placeholder="URL (optional)"
+              value={form.url}
+              onChange={e => setForm({ ...form, url: e.target.value })}
+            />
+
+            <input
+              type="file"
+              name="audio"
+              accept="audio/*"
+              required
+              className="md:col-span-2 rounded-md border px-3 py-2"
+            />
+
+       
           </div>
 
           <div className="flex items-center gap-3">
@@ -135,6 +187,10 @@ export default function SamplesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => { setAuthToken(localStorage.getItem("auth_token")); }, []);
 
 
   
@@ -149,6 +205,13 @@ export default function SamplesPage() {
     id: null,
     role: null,
   });
+
+  useEffect(() => {
+    setMounted(true);
+    setAuthToken(localStorage.getItem('auth_token') ?? null);
+  }, []);
+
+ 
 
   useEffect(() => {
   const p = readTokenPayload();
@@ -192,47 +255,18 @@ export default function SamplesPage() {
 
 
 
-  const fetchSamples = async () => {
-  const token = localStorage.getItem('auth_token');
-  if (!token) {
-    setError('You must log in first');
-    setLoading(false);
-    router.push('/login');
-    return;
-  }
-
+const fetchSamples = async () => {
   try {
-    const res = await fetch(`${API_BASE}/samples`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_role');
-      setError('Session expired. Please log in again.');
-      setLoading(false);
-      router.push('/login');
-      return;
-    }
-
+    const res = await fetch(`${API_BASE}/samples`, { headers: { 'Content-Type': 'application/json' }});
     let data: any = null;
     try { data = await res.json(); } catch {}
+    if (!res.ok) throw new Error(data?.error || `Failed to load samples (status ${res.status})`);
 
-    if (!res.ok) {
-      throw new Error(data?.error || `Failed to load samples (status ${res.status})`);
-    }
-
-    // יהיה:
     const list =
       Array.isArray(data?.items)   ? data.items :
       Array.isArray(data)          ? data :
       Array.isArray(data?.samples) ? data.samples :
-      Array.isArray(data?.data)    ? data.data :
-      [];
-    
+      Array.isArray(data?.data)    ? data.data : [];
 
     setSamples(list);
     setError(null);
@@ -242,6 +276,7 @@ export default function SamplesPage() {
     setLoading(false);
   }
 };
+
   useEffect(() => {
     const handler = () => {
     setLoading(true);
@@ -276,21 +311,37 @@ export default function SamplesPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto w-full max-w-3xl">
-        <header className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl text-black font-bold">Samples</h1>
+       <header className="mb-6 flex items-center justify-between">
+  <h1 className="text-2xl text-black font-bold">Samples</h1>
 
-          {/* כפתור Logout קטן (מנקה טוקן ומחזיר ל-Login) */}
-          <button
-            onClick={() => {
-              localStorage.removeItem("auth_token");
-              localStorage.removeItem("auth_role");
-              router.push("/login");
-            }}
-            className="text-red-700 rounded-md border border-red-700 px-3 py-1.5 text-sm hover:bg-red-200"
-          >
-            Logout
-          </button>
-        </header>
+  {mounted && (
+    authToken ? (
+      <button
+        onClick={() => {
+          if (!confirm('Are you sure you want to log out?')) return;
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_role');
+          setAuthToken(null);
+          router.push('/samples');
+        }}
+        className="text-red-700 rounded-md border border-red-700 px-3 py-1.5 text-sm hover:bg-red-200"
+      >
+        Logout
+      </button>
+    ) : (
+      <div className="flex gap-3">
+        <Link href="/login" className="text-gray-700 rounded-md border text-gray-700 px-3 py-1.5 text-sm hover:bg-gray-300">
+          Login
+        </Link>
+        <Link href="/register" className="text-gray-700 rounded-md border text-gray-700 px-3 py-1.5 text-sm hover:bg-gray-300">
+          Register
+        </Link>
+      </div>
+    )
+  )}
+</header>
+
+
         <div className="mb-4">
           <input
             value={search}
@@ -357,17 +408,26 @@ export default function SamplesPage() {
               >
                 <div className="text-gray-700 flex items-start justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
                       <Link href={`/samples/${s._id}`} className="hover:underline">
                         {s.title}
                       </Link>
 
+                     { s.audio && (
+                      <div className="transform scale-75 origin-left">
+                      <audio controls preload="metadata" src={`${API_BASE}/uploads/${s.audio}`} />
+
+                      </div>
+                    )}
+
+
                       {s.owner === me.id && (
-                        <span className="ml-2 align-middle rounded-full border px-2 py-0.5 text-xs text-gray-700 bg-blue-100">
+                        <span className="ml-2 rounded-full border  px-2 py-0.5 origin-left text-xs text-gray-700 bg-blue-100 ">
                           me
                         </span>
-                      )}
+                     )}
                     </h2>
+
 
 
                     <p className="text-sm text-gray-500">
@@ -393,17 +453,18 @@ export default function SamplesPage() {
                   </div>
 
                   <div className="ml-3 flex items-center gap-2">
-                  {s.url && (
-                    <a
-                      className="inline-flex items-center rounded-md border border-gray-400 px-3 py-1.5 text-sm hover:bg-blue-200"
-                      href={s.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Open sample URL"
-                    >
-                      Open
-                    </a>
-                      )}
+                  {s.audio && (
+                      <a
+                      href={`${API_BASE}/download/${s._id}`}
+                        className="inline-flex items-center text-black rounded-md border border-gray-400 px-3 py-1.5 text-sm hover:bg-gray-500"
+                        
+                        download
+                        title="Download sample"
+                      >
+                        Download
+                      </a>
+                    )}
+
 
                   {canDelete(s) && (
                     <button
