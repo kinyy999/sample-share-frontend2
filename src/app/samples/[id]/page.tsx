@@ -24,14 +24,18 @@ type Sample = {
   comments?: Comment[];
 };
 
-  // מזהה המשתמש המחובר
-  type Me = { id: string | null; role: string | null };
+// מזהה המשתמש המחובר
+type Me = { id: string | null; role: string | null };
 
-  function readTokenPayload() {
-    const t = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (!t) return null;
-  try { return JSON.parse(atob(t.split('.')[1])); } catch { return null; }
+function readTokenPayload() {
+  const t = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  if (!t) return null;
+  try {
+    return JSON.parse(atob(t.split(".")[1]));
+  } catch {
+    return null;
   }
+}
 
 export default function SampleDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,9 +44,9 @@ export default function SampleDetailsPage() {
   const [sample, setSample] = useState<Sample | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
-  
+
   // add–comment state
   const [authed, setAuthed] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -60,19 +64,19 @@ export default function SampleDetailsPage() {
     setMe({ id: p?.userId ?? null, role: p?.role ?? null });
   }, []);
 
-// נתחיל עריכה
+  // נתחיל עריכה
   function startEdit(c: any) {
     setEditingCommentId(c._id);
     setEditText(c.text || "");
   }
 
-// ביטול עריכה
+  // ביטול עריכה
   function cancelEdit() {
     setEditingCommentId(null);
     setEditText("");
   }
 
-// שמירת עריכה
+  // שמירת עריכה
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editingCommentId) return;
@@ -125,23 +129,22 @@ export default function SampleDetailsPage() {
     }
   }
 
-
   function canDeleteComment(c: { user?: { _id?: string } }) {
-    return me.role === 'admin' || (c.user?._id && c.user._id === me.id);
+    return me.role === "admin" || (c.user?._id && c.user._id === me.id);
   }
 
   async function onDeleteComment(cid: string) {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
     if (!token) {
-      setPostError('You must log in first');
+      setPostError("You must log in first");
       return;
     }
-    if (!confirm('Delete this comment?')) return;
+    if (!confirm("Delete this comment?")) return;
 
     setDeletingCommentId(cid);
     try {
       const res = await fetch(`${API_BASE}/samples/${id}/comments/${cid}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json().catch(() => ({}));
@@ -152,7 +155,7 @@ export default function SampleDetailsPage() {
         prev ? { ...prev, comments: (prev.comments || []).filter((c: any) => c._id !== cid) } : prev
       );
     } catch (e: any) {
-      setPostError(e?.message || 'Network error');
+      setPostError(e?.message || "Network error");
     } finally {
       setDeletingCommentId(null);
     }
@@ -175,7 +178,6 @@ export default function SampleDetailsPage() {
       }
     })();
   }, [id]);
-                              
 
   // בודק אם יש טוקן עבור טופס התגובה
   useEffect(() => {
@@ -225,7 +227,6 @@ export default function SampleDetailsPage() {
         throw new Error(data?.error || `Failed to add comment (${res.status})`);
       }
 
-      // השרת מחזיר { message, sample } — נעדכן את המסך
       const updated = (data?.sample ?? null) as Sample | null;
       if (updated) setSample(updated);
       setCommentText("");
@@ -238,272 +239,400 @@ export default function SampleDetailsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto w-full max-w-3xl">
-        <header className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-black">Sample details</h1>
+    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black px-4 py-6 md:px-6">
+      <div className="mx-auto w-full max-w-5xl">
+        {/* top bar */}
+        <header className="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-300/80">SampleShare</p>
+            <h1 className="text-2xl font-bold text-white">Sample details</h1>
+          </div>
           <button
             onClick={() => router.push("/samples")}
-            className="text-black rounded-md border border-gray-600 px-3 py-1.5 text-sm hover:bg-gray-200"
+            className="rounded-md border border-slate-500/70 bg-slate-900/40 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-800/80 transition"
           >
             ← Back
           </button>
         </header>
 
-        {loading && <div className="rounded-md border border-gray-600 bg-white p-4">Loading…</div>}
+        {/* hero / cover */}
+        <div className="mb-6 overflow-hidden rounded-2xl border border-slate-700/80 bg-[radial-gradient(circle_at_top,_#38bdf8_0,_#0f172a_55%,_#020617_100%)]">
+          <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm text-slate-200/80">Previewing sample</p>
+              <h2 className="mt-1 text-2xl font-semibold text-white">
+                {sample?.title ?? "Unknown sample"}
+              </h2>
+              <p className="mt-2 text-sm text-slate-200/75 max-w-2xl">
+                Manage comments, metadata and visibility for this sample.
+              </p>
+            </div>
+            {/* decorative image box */}
+            <div className="h-28 w-full max-w-xs rounded-xl bg-slate-950/40 border border-slate-500/40 backdrop-blur flex items-center justify-center text-slate-200/70 text-xs tracking-wide">
+              {sample?.genre ? (
+                <div className="text-center">
+                  <p className="text-[0.65rem] uppercase text-slate-300/80">Genre</p>
+                  <p className="text-lg font-semibold text-white">{sample.genre}</p>
+                  {sample.bpm !== undefined && (
+                    <p className="mt-2 text-xs text-slate-200/80">BPM {sample.bpm}</p>
+                  )}
+                </div>
+              ) : (
+                <span>Sample artwork</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {loading && (
+          <div className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-4 text-slate-100">
+            Loading…
+          </div>
+        )}
 
         {!loading && error && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
+          <div className="rounded-xl border border-red-400/50 bg-red-950/40 p-4 text-red-200">
+            {error}
+          </div>
         )}
 
         {!loading && !error && sample && (
-          <div className="space-y-6">
-            {/* פרטים בסיסיים */}
-            <div className="rounded-lg border border-gray-600 bg-white p-4">
-              <h2 className="text-lg font-semibold text-black">{sample.title}</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {sample.bpm !== undefined && (
-                  <>
-                    BPM: <span className="text-black font-medium">{sample.bpm}</span> ·{" "}
-                  </>
-                )}
-                {sample.key && (
-                  <>
-                    Key: <span className="text-black font-medium">{sample.key}</span> ·{" "}
-                  </>
-                )}
-                {sample.genre && (
-                  <>
-                    Genre: <span className="text-black font-medium">{sample.genre}</span>
-                  </>
-                )}
-              </p>
-
-              {sample.artist && <p className="mt-1 text-sm text-gray-700">Artist: {sample.artist}</p>}
-
-              {sample.url && (
-                <a
-                  href={sample.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-black mt-3 inline-flex items-center rounded-md border border-gray-600 px-3 py-1.5 text-sm hover:bg-gray-200"
-                >
-                  Open URL
-                </a>
-              )}
-
-              {sample.tags && sample.tags.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {sample.tags.map((t, i) => (
-                    <span
-                      key={`tag-${i}`}
-                      className="rounded-full border border-gray-600 px-2 py-0.5 text-xs text-gray-700"
-                    >
-                      #{t}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {sample.description && (
-                <p className="mt-3 text-sm text-gray-800 whitespace-pre-wrap">{sample.description}</p>
-              )}
-
-              {/* טופס עריכה קטן — מוצג רק לבעלים או אדמין */}
-              {(me?.role === 'admin' || (me?.id && sample?.owner === me.id)) && (
-               <details className="mt-4 rounded-md border border-gray-600">
-                 <summary className="cursor-pointer select-none px-3 py-2 text-sm text-black hover:bg-gray-50">
-                   Edit sample
-                 </summary>
-
-                <form
-                  className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3"
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-
-                    const token = localStorage.getItem('auth_token');
-                    if (!token) { router.push('/login'); return; }
-
-                    // אוספים את כל השדות + קובץ (אם נבחר)
-                    const fd = new FormData(e.currentTarget); // יש אינפוט בשם "audio"
-
-                    try {
-                      const res = await fetch(`${API_BASE}/samples/${id}`, {
-                        method: 'PUT',         // ← חשוב! PUT אמיתי, לא POST
-                        headers: {
-                          Authorization: `Bearer ${token}`, // בלי Content-Type ידני
-                        },
-                        body: fd,              // ← FormData כולל הקובץ
-                      });
-
-                    if (res.status === 401 || res.status === 403) {
-                        localStorage.removeItem('auth_token');
-                        localStorage.removeItem('auth_role');
-                        router.push('/login');
-                        return;
-                      }
-
-                      const data = await res.json().catch(() => ({}));
-                      if (!res.ok) {
-                        alert(data?.error || `Update failed (${res.status})`);
-                        return;
-                      }
-
-                     setSample(data);
-                      alert('Changes updated successfully ✔');
-                    } catch (err: any) {
-                      alert(err?.message || 'Network error');
-                    }
-                  }}
-                >
-                  {/* השדות שלך כמו שהם */}
-                  <input name="title" defaultValue={sample.title ?? ''} placeholder="Title*" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2"required/>
-                  <input name="bpm"   defaultValue={sample.bpm ?? ''}    placeholder="bpm" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2"inputMode="numeric" />
-                  <input name="key"   defaultValue={sample.key ?? ''}    placeholder="Key (e.g Am)" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2" />
-                  <input name="genre" defaultValue={sample.genre ?? ''}  placeholder="Genre" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2"/>
-                  <input name="url"   defaultValue={sample.url ?? ''}    placeholder="URL" className="text-gray-600 rounded-md border border-gray-600 px-3 py-2"/>
-
-                  {/* קובץ אודיו חלופי — חשוב שהשם יהיה audio */}
-                  <div className="md:col-span-2">
-                    <label className="text-gray-600 block text-sm text-gray-700 mb-1">Replace audio (optional)</label>
-                    <input type="file" name="audio" accept="audio/*"
-                           className="text-gray-600 block w-full rounded-md border border-gray-600 px-3 py-2" />
+          <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+            {/* left: info + comments */}
+            <div className="space-y-6">
+              {/* פרטים בסיסיים */}
+              <div className="rounded-xl border border-slate-700/70 bg-slate-900/40 p-5 backdrop-blur">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">{sample.title}</h2>
+                    <p className="mt-1 text-sm text-slate-300/85">
+                      {sample.bpm !== undefined && (
+                        <>
+                          BPM:{" "}
+                          <span className="text-white font-medium">{sample.bpm}</span> ·{" "}
+                        </>
+                      )}
+                      {sample.key && (
+                        <>
+                          Key: <span className="text-white font-medium">{sample.key}</span> ·{" "}
+                        </>
+                      )}
+                      {sample.genre && (
+                        <>
+                          Genre: <span className="text-white font-medium">{sample.genre}</span>
+                        </>
+                      )}
+                    </p>
+                    {sample.artist && (
+                      <p className="mt-2 text-sm text-slate-200/85">Artist: {sample.artist}</p>
+                    )}
                   </div>
 
-                  <div className="md:col-span-2">
-                    <button className="text-gray-600 rounded-md border border-gray-600 px-3 py-1.5 text-sm hover:bg-blue-200">
-                      Save
+                  {sample.url && (
+                    <a
+                      href={sample.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 rounded-md bg-slate-100/95 px-3 py-1.5 text-sm font-medium text-slate-900 hover:bg-white transition"
+                    >
+                      Open URL
+                      <span aria-hidden>↗</span>
+                    </a>
+                  )}
+                </div>
+
+                {sample.tags && sample.tags.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {sample.tags.map((t, i) => (
+                      <span
+                        key={`tag-${i}`}
+                        className="rounded-full border border-slate-500/60 bg-slate-950/30 px-2 py-0.5 text-xs text-slate-200/90"
+                      >
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {sample.description && (
+                  <p className="mt-4 text-sm text-slate-100/85 whitespace-pre-wrap leading-relaxed">
+                    {sample.description}
+                  </p>
+                )}
+
+                {/* טופס עריכה קטן — מוצג רק לבעלים או אדמין */}
+                {(me?.role === "admin" || (me?.id && sample?.owner === me.id)) && (
+                  <details className="mt-5 overflow-hidden rounded-md border border-slate-600/60 bg-slate-950/40">
+                    <summary className="cursor-pointer select-none px-3 py-2 text-sm text-slate-100 hover:bg-slate-900/70">
+                      Edit sample
+                    </summary>
+
+                    <form
+                      className="p-3 grid grid-cols-1 gap-3 md:grid-cols-2"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+
+                        const token = localStorage.getItem("auth_token");
+                        if (!token) {
+                          router.push("/login");
+                          return;
+                        }
+
+                        const fd = new FormData(e.currentTarget);
+
+                        try {
+                          const res = await fetch(`${API_BASE}/samples/${id}`, {
+                            method: "PUT",
+                            headers: {
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: fd,
+                          });
+
+                          if (res.status === 401 || res.status === 403) {
+                            localStorage.removeItem("auth_token");
+                            localStorage.removeItem("auth_role");
+                            router.push("/login");
+                            return;
+                          }
+
+                          const data = await res.json().catch(() => ({}));
+                          if (!res.ok) {
+                            alert(data?.error || `Update failed (${res.status})`);
+                            return;
+                          }
+
+                          setSample(data);
+                          alert("Changes updated successfully ✔");
+                        } catch (err: any) {
+                          alert(err?.message || "Network error");
+                        }
+                      }}
+                    >
+                      <input
+                        name="title"
+                        defaultValue={sample.title ?? ""}
+                        placeholder="Title*"
+                        className="rounded-md border border-slate-500 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400"
+                        required
+                      />
+                      <input
+                        name="bpm"
+                        defaultValue={sample.bpm ?? ""}
+                        placeholder="bpm"
+                        className="rounded-md border border-slate-500 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400"
+                        inputMode="numeric"
+                      />
+                      <input
+                        name="key"
+                        defaultValue={sample.key ?? ""}
+                        placeholder="Key (e.g Am)"
+                        className="rounded-md border border-slate-500 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400"
+                      />
+                      <input
+                        name="genre"
+                        defaultValue={sample.genre ?? ""}
+                        placeholder="Genre"
+                        className="rounded-md border border-slate-500 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400"
+                      />
+                      <input
+                        name="url"
+                        defaultValue={sample.url ?? ""}
+                        placeholder="URL"
+                        className="rounded-md border border-slate-500 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400"
+                      />
+
+                      <div className="md:col-span-2">
+                        <label className="mb-1 block text-sm text-slate-200/85">
+                          Replace audio (optional)
+                        </label>
+                        <input
+                          type="file"
+                          name="audio"
+                          accept="audio/*"
+                          className="block w-full rounded-md border border-slate-500 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200 file:px-3 file:py-1 file:text-sm file:font-medium file:text-slate-900"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <button className="rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-900 hover:bg-white transition">
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                  </details>
+                )}
+              </div>
+
+              {/* תגובות */}
+              <div className="rounded-xl border border-slate-700/70 bg-slate-900/40 p-5 backdrop-blur">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-md font-semibold text-white">תגובות</h3>
+                  {sample?.comments?.length ? (
+                    <span className="rounded-full bg-slate-800/70 px-3 py-1 text-xs text-slate-200/80">
+                      {sample.comments.length} comments
+                    </span>
+                  ) : null}
+                </div>
+
+                {sample?.comments?.length ? (
+                  <ul className="mb-4 space-y-3">
+                    {sample.comments.map((c) => (
+                      <li
+                        key={c._id}
+                        className="rounded-lg border border-slate-700/60 bg-slate-950/30 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="text-sm text-slate-200">
+                            <span className="font-medium">
+                              {c.user?.username || c.user?.email || "Unknown"}
+                            </span>
+                            {c.createdAt && (
+                              <span className="ml-2 text-xs text-slate-400">
+                                {new Date(c.createdAt).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {canDeleteComment(c) && editingCommentId !== c._id && (
+                              <button
+                                onClick={() => startEdit(c)}
+                                className="rounded border border-slate-500/60 px-2 py-0.5 text-xs text-slate-100 hover:bg-slate-800/70"
+                                title="Edit comment"
+                              >
+                                Edit
+                              </button>
+                            )}
+
+                            {canDeleteComment(c) && (
+                              <button
+                                onClick={() => onDeleteComment(c._id)}
+                                disabled={deletingCommentId === c._id}
+                                className="rounded border border-red-500/70 px-2 py-0.5 text-xs text-red-200 hover:bg-red-500/10 disabled:opacity-50"
+                                title="Delete comment"
+                              >
+                                {deletingCommentId === c._id ? "Deleting…" : "Delete"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {editingCommentId === c._id ? (
+                          <form onSubmit={saveEdit} className="mt-2 space-y-2">
+                            <textarea
+                              className="w-full rounded-md border border-slate-600 bg-slate-900/50 px-3 py-2 text-sm text-slate-100"
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              rows={3}
+                              autoFocus
+                            />
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="submit"
+                                disabled={posting}
+                                className="rounded bg-slate-100 px-3 py-1 text-sm font-medium text-slate-900 hover:bg-white transition disabled:opacity-70"
+                              >
+                                {posting ? "Saving…" : "Save"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelEdit}
+                                className="rounded-md border border-slate-600 px-3 py-1 text-sm text-slate-100 hover:bg-slate-800/60"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="mt-2 text-sm text-slate-100">{c.text}</div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="mb-4 rounded-md border border-slate-700/50 bg-slate-950/30 p-3 text-sm text-slate-200">
+                    אין תגובות עדיין.
+                  </div>
+                )}
+
+                {/* טופס הוספת תגובה */}
+                {authed ? (
+                  <form onSubmit={onAddComment} className="space-y-2">
+                    <textarea
+                      className="w-full rounded-md border border-slate-700 bg-slate-950/20 p-2 text-sm text-slate-100 placeholder:text-slate-500"
+                      placeholder="כתוב/כתבי תגובה…"
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      rows={3}
+                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        disabled={posting || commentText.trim().length === 0}
+                        className="rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-900 hover:bg-white transition disabled:opacity-40"
+                      >
+                        {posting ? "שולח…" : "הוסף תגובה"}
+                      </button>
+                      {postOk && <span className="text-xs text-green-300">{postOk}</span>}
+                      {postError && <span className="text-xs text-red-300">{postError}</span>}
+                    </div>
+                  </form>
+                ) : (
+                  <div className="rounded-md border border-amber-300/40 bg-amber-900/20 p-3 text-sm text-amber-50">
+                    כדי להוסיף תגובה יש להתחבר.{" "}
+                    <button
+                      onClick={() => router.push("/login")}
+                      className="underline decoration-dotted underline-offset-2 hover:opacity-90"
+                    >
+                      התחברות
                     </button>
                   </div>
-                </form>
-
-              </details>
-            )}
-
-
-
-
+                )}
+              </div>
             </div>
 
-            {/* תגובות */}
-            <div className="rounded-lg border border-gray-600 bg-white p-4">
-              <h3 className="text-md font-semibold text-black mb-3">תגובות</h3>
-
-              {sample?.comments?.length ? (
-              <ul className="space-y-2 mb-4">
-                {sample.comments.map((c) => (
-                  <li key={c._id} className="rounded-md border border-gray-600 p-3">
-                    <div className="flex items-start justify-between">
-                      <div className="text-sm text-gray-700">
-                        <span className="font-medium">
-                          {c.user?.username || c.user?.email || "Unknown"}
-                        </span>
-                        {c.createdAt && (
-                          <span className="ml-2 text-gray-500">
-                            {new Date(c.createdAt).toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {/* Edit – רק Owner/Admin, ורק אם לא בעריכה כרגע */}
-                        {canDeleteComment(c) && editingCommentId !== c._id && (
-                          <button
-                            onClick={() => startEdit(c)}
-                            className="text-gray-800 rounded border border-gray-400 px-2 py-0.5 text-xs hover:bg-gray-300"
-                            title="Edit comment"
-                          >
-                            Edit
-                          </button>
-                        )}
-
-                        {/* Delete – רק Owner/Admin */}
-                        {canDeleteComment(c) && (
-                          <button
-                            onClick={() => onDeleteComment(c._id)}
-                            disabled={deletingCommentId === c._id}
-                            className="rounded border border-red-600 px-2 py-0.5 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50"
-                            title="Delete comment"
-                          >
-                            {deletingCommentId === c._id ? "Deleting…" : "Delete"}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* גוף התגובה: מצב עריכה או תצוגה */}
-                    {editingCommentId === c._id ? (
-                      <form onSubmit={saveEdit} className="mt-2">
-                        <textarea
-                          className="text-gray-800 w-full rounded-md border px-3 py-2 text-sm"
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                      rows={3}
-                      autoFocus
-                    />
-                    <div className="mt-2 flex items-center gap-2">
-                      <button
-                            type="submit"
-                            disabled={posting}
-                            className="rounded border border-gray-600 px-3 py-1 text-sm text-gray-700 hover:bg-gray-200 disabled:opacity-200"
-                          >
-                            {posting ? "Saving…" : "Save"}
-                      </button>
-                       <button
-                            type="button"
-                            onClick={cancelEdit}
-                            className="rounded border border-gray-600 px-3 py-1 text-sm text-gray-700 hover:bg-gray-200 disabled:opacity-200"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
-                    ) : (
-                      <div className="mt-1 text-sm text-gray-800">{c.text}</div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-sm text-gray-600 mb-4">אין תגובות עדיין.</div>
-            )}
-
-
-            
-
-
-              {/* טופס הוספת תגובה */}
-              {authed ? (
-                <form onSubmit={onAddComment} className="space-y-2">
-                  <textarea
-                    className="text-gray-600 w-full rounded-md border border-gray-600 p-2 text-sm"
-                    placeholder="כתוב/כתבי תגובה…"
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    rows={3}
-                  />
-                  <div className="flex items-center gap-3">
-                    <button
-                      disabled={posting || commentText.trim().length === 0}
-                      className="text-black rounded-md border border-gray-600 px-3 py-1.5 text-sm hover:bg-gray-200 disabled:opacity-50"
-                    >
-                      {posting ? "שולח…" : "הוסף תגובה"}
-                    </button>
-                    {postOk && <span className="text-xs text-green-700">{postOk}</span>}
-                    {postError && <span className="text-xs text-red-600">{postError}</span>}
-                  </div>
-                </form>
-              ) : (
-                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                  כדי להוסיף תגובה יש להתחבר.{" "}
-                  <button
-                    onClick={() => router.push("/login")}
-                    className="underline decoration-dotted hover:opacity-80"
-                  >
-                    התחברות
-                  </button>
+            {/* right side: meta */}
+            <div className="space-y-6">
+              <div className="rounded-xl border border-slate-700/70 bg-slate-950/30 p-4">
+                <h4 className="text-sm font-semibold text-slate-100 mb-3">Meta</h4>
+                <div className="space-y-2 text-sm text-slate-200/85">
+                  <p>
+                    <span className="text-slate-400">ID:</span> {sample._id}
+                  </p>
+                  {sample.createdAt && (
+                    <p>
+                      <span className="text-slate-400">Created:</span>{" "}
+                      {new Date(sample.createdAt).toLocaleString()}
+                    </p>
+                  )}
+                  {sample.updatedAt && (
+                    <p>
+                      <span className="text-slate-400">Updated:</span>{" "}
+                      {new Date(sample.updatedAt).toLocaleString()}
+                    </p>
+                  )}
+                  <p>
+                    <span className="text-slate-400">Visibility:</span>{" "}
+                    {sample.isPublic ? "Public" : "Private"}
+                  </p>
+                  {sample.owner && (
+                    <p>
+                      <span className="text-slate-400">Owner:</span> {sample.owner}
+                    </p>
+                  )}
                 </div>
-              )}
+              </div>
+
+              <div className="rounded-xl border border-slate-700/70 bg-slate-950/30 p-4">
+                <h4 className="text-sm font-semibold text-slate-100 mb-3">
+                  Quick tips
+                </h4>
+                <ul className="space-y-2 text-sm text-slate-200/80">
+                  <li>• ניתן לערוך תגובות רק אם אתה הבעלים או אדמין.</li>
+                  <li>• העלאת אודיו חדש מחליפה את הקובץ הקיים.</li>
+                  <li>• תגובות נשמרות מיידית בריענון.</li>
+                </ul>
+              </div>
             </div>
           </div>
         )}

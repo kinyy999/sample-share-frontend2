@@ -4,8 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-
-
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
 
 export default function LoginPage() {
@@ -19,10 +17,10 @@ export default function LoginPage() {
 
   const canSubmit = email.trim() !== "" && password.trim().length >= 6 && !loading;
   const router = useRouter();
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-
     setLoading(true);
     setError(null);
     setToken(null);
@@ -36,23 +34,17 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         setError(data?.error || "Login failed");
         return;
       }
 
-      // מצפה למבנה: { token, role }
       setToken(data.token);
       setRole(data.role);
-
-      // שמירת הטוקן לזמן הדפדפן (אפשר להחליף ל־cookies בהמשך)
       localStorage.setItem("auth_token", data.token);
       localStorage.setItem("auth_role", data.role);
       setSuccess("User connected successfully ✅");
-      setTimeout(() => {
-        router.push("/samples");
-        }, 10);
+      setTimeout(() => router.push("/samples"), 10);
     } catch (err: any) {
       setError(err.message || "Network error");
     } finally {
@@ -66,42 +58,44 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-md border border-black p-6">
-        <h1 className="text-2xl font-bold text-center text-black mb-1">SampleShare – Login</h1>
-        <p className="text-center text-black text-sm mb-6">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-900 via-slate-950 to-black px-4 py-12 text-slate-100">
+      <div className="w-full max-w-md rounded-2xl border border-slate-700/70 bg-slate-900/50 backdrop-blur-xl p-8 shadow-2xl">
+        <h1 className="text-3xl font-bold text-center text-white mb-2">
+          SampleShare – Login
+        </h1>
+        <p className="text-center text-slate-300 text-sm mb-8">
           היכנס עם המייל והסיסמה שלך
         </p>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <label className="block">
-            <span className="text-sm font-medium text-black">Email</span>
+            <span className="text-sm font-medium text-slate-200">Email</span>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full text-black rounded-md border border-black px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 w-full rounded-md border border-slate-600 bg-slate-950/40 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-cyan-400 outline-none"
               placeholder="name@example.com"
               required
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-black">Password</span>
+            <span className="text-sm font-medium text-slate-200">Password</span>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full text-black rounded-md border border-black px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 w-full rounded-md border border-slate-600 bg-slate-950/40 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-cyan-400 outline-none"
               placeholder="••••••••"
               minLength={6}
               required
             />
-            <span className="text-xs text-gray-700">לפחות 6 תווים</span>
+            <span className="text-xs text-slate-400">לפחות 6 תווים</span>
           </label>
 
           {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="rounded-md border border-red-500/60 bg-red-950/40 px-3 py-2 text-sm text-red-200">
               {error}
             </div>
           )}
@@ -109,34 +103,34 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={!canSubmit}
-            className={`w-full rounded-md px-4 py-2 font-medium text-white
-              ${canSubmit ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"}
-            `}
+            className={`w-full rounded-md px-4 py-2 font-medium transition-all ${
+              canSubmit
+                ? "bg-cyan-400/90 hover:bg-cyan-300 text-slate-900"
+                : "bg-slate-700/40 text-slate-500 cursor-not-allowed"
+            }`}
           >
             {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>
 
-        <div className="mt-2">
+        <div className="mt-4">
           <Link
             href="/samples"
-            className="block w-full rounded-md border px-3 py-2 text-center bg-blue-600 hover:bg-blue-700 "
+            className="block w-full rounded-md border border-slate-600 bg-slate-800/60 hover:bg-slate-700 px-4 py-2 text-center text-slate-100 transition"
           >
             Continue as Guest
           </Link>
         </div>
 
-
         {token && (
-          <div className="mt-6 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">
+          <div className="mt-6 space-y-3">
+            <div className="flex items-center justify-between text-sm text-slate-300">
+              <span>
                 <strong>Role:</strong> {role}
               </span>
               <button
                 onClick={copyToken}
-                className="text-sm text-blue-600 hover:underline"
-                title="Copy token"
+                className="text-cyan-300 hover:text-cyan-200 underline underline-offset-2"
               >
                 Copy token
               </button>
@@ -144,24 +138,23 @@ export default function LoginPage() {
             <textarea
               readOnly
               value={token}
-              className="w-full h-28 text-gray-500 rounded-md border border-gray-300 p-2 text-xs font-mono bg-gray-50"
+              className="w-full h-28 rounded-md border border-slate-700 bg-slate-950/30 p-2 text-xs text-slate-300 font-mono"
             />
           </div>
         )}
-        <div className="mt-3 text-center">
+
+        <div className="mt-6 text-center text-sm text-slate-400">
+          <span>?אין לך חשבון</span>{" "}
           <Link
             href="/register"
-            className="inline-block text-sm font-medium text-blue-600 hover:text-blue-700 underline underline-offset-4"
+            className="text-cyan-300 hover:text-cyan-200 underline underline-offset-2 ml-1"
           >
-             להרשמה
+            להרשמה
           </Link>
-
-          <span className="text-sm text-gray-600 dark:text-gray-600">
-                 ?אין לך חשבון
-          </span>{" "}
         </div>
-        <p className="mt-6 text-center text-xs text-gray-600">
-          API: <code>{API_BASE}/login</code>
+
+        <p className="mt-6 text-center text-xs text-slate-500">
+          API: <code className="text-cyan-400">{API_BASE}/login</code>
         </p>
       </div>
     </main>
